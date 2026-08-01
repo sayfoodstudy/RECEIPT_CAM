@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
+    android:background="@android:color/black">
+
+    <androidx.camera.view.PreviewView
+        android:id="@+id/previewView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <!-- 상단 바: 설정(좌) / 플래시(우) -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top"
+        android:orientation="horizontal"
+        android:padding="16dp">
+
+        <ImageButton
+            android:id="@+id/btnSettings"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:padding="10dp"
+            android:background="@drawable/circle_bg"
+            android:src="@drawable/ic_settings"
+            android:contentDescription="settings" />
+
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" />
+
+        <ImageButton
+            android:id="@+id/btnFlash"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:padding="10dp"
+            android:background="@drawable/circle_bg"
+            android:src="@drawable/ic_flash"
+            android:contentDescription="flash" />
+    </LinearLayout>
+
+    <!-- 폴더 미설정 안내 배너 -->
+    <TextView
+        android:id="@+id/bannerFolder"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|center_horizontal"
+        android:layout_marginTop="80dp"
+        android:background="#CC000000"
+        android:paddingHorizontal="16dp"
+        android:paddingVertical="10dp"
+        android:text="@string/banner_no_folder"
+        android:textColor="@color/white"
+        android:textSize="13sp"
+        android:visibility="gone" />
+
+    <!-- 하단 컨트롤: 썸네일(좌) / 셔터(중앙) -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:layout_marginBottom="40dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="32dp">
+
+        <FrameLayout
+            android:id="@+id/thumbWrapper"
+            android:layout_width="52dp"
+            android:layout_height="52dp"
+            android:background="@drawable/circle_thumb_bg"
+            android:clipToOutline="true">
+
+            <ImageView
+                android:id="@+id/thumbImage"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerInside"
+                android:padding="14dp"
+                android:src="@drawable/ic_image"
+                android:contentDescription="gallery" />
+        </FrameLayout>
+
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" />
+
+        <ImageButton
+            android:id="@+id/btnShutter"
+            android:layout_width="76dp"
+            android:layout_height="76dp"
+            android:background="@drawable/shutter_button"
+            android:contentDescription="shutter" />
+
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" />
+
+        <!-- 대칭용 빈 자리 -->
+        <View
+            android:layout_width="52dp"
+            android:layout_height="52dp"
+            android:visibility="invisible" />
+    </LinearLayout>
+
+</FrameLayout>

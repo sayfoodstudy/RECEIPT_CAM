@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ReceiptCam</string>
+
+    <!-- Camera (launcher) -->
+    <string name="camera_permission_needed">촬영을 위해 카메라 권한이 필요합니다</string>
+    <string name="capture_failed">촬영 실패: </string>
+    <string name="banner_no_folder">저장 폴더가 설정되지 않았습니다 — 탭하여 설정</string>
+
+    <!-- Settings -->
+    <string name="settings_title">설정</string>
+    <string name="folder_label">저장 폴더</string>
+    <string name="folder_none">선택되지 않음</string>
+    <string name="btn_change">변경</string>
+    <string name="saved_count">저장된 영수증: %1$d개</string>
+    <string name="version_info">버전 0.2</string>
+    <string name="privacy_note">사진은 위 폴더에만 저장됩니다. 클라우드 자동 동기화 없음.</string>
+
+    <!-- Edit -->
+    <string name="edit_title">편집</string>
+    <string name="edit_hint_auto">자동 컷 완료 — 조정한 뒤 저장하세요</string>
+    <string name="edit_hint_fail">자동 컷 실패 — 수동 컷 버튼으로 직접 맞춰주세요</string>
+    <string name="edit_hint_manual">수동 컷 완료 — 조정한 뒤 저장하세요</string>
+    <string name="brightness">밝기</string>
+    <string name="contrast">대비</string>
+    <string name="sharpness">선명도</string>
+    <string name="btn_retake">재촬영</string>
+    <string name="btn_manual_crop">수동 컷</string>
+    <string name="btn_save">저장</string>
+    <string name="pick_folder_to_save">폴더를 선택하면 바로 저장됩니다</string>
+    <string name="saved_ok">저장 완료</string>
+    <string name="saved_fail">저장 실패</string>
+    <string name="no_folder">저장 폴더가 설정되지 않았습니다</string>
+    <string name="btn_toggle_original">원본 보기</string>
+    <string name="btn_toggle_cropped">컷 보기</string>
+
+    <!-- Manual crop -->
+    <string name="crop_title">모서리 맞추기</string>
+    <string name="crop_hint">네 모서리의 원을 드래그해 영수증 가장자리에 맞추세요</string>
+    <string name="crop_done">완료</string>
+
+    <!-- Gallery -->
+    <string name="gallery_title">저장된 영수증</string>
+    <string name="gallery_empty">아직 저장된 영수증이 없습니다</string>
+</resources>
