@@ -12,21 +12,37 @@ import java.util.List;
 
 /**
  * Finds the receipt (bright paper on darker background) in a photo and
- * perspective-corrects it to a rectangle. Pure Java, no OCR, no external libs.
+ * perspective-corrects it to a rectangle.
+ *
+ * v0.3 detection pipeline:
+ *   gray -> blur -> Otsu base threshold
+ *   -> 3 threshold candidates (base, +12%, +25% of separation)
+ *   -> largest connected component only (drops bright background blobs)
+ *   -> convex hull -> min-area rotated rect -> corner sanity check
+ *   -> candidate with strongest Sobel edge support along its perimeter wins
  */
 public final class ReceiptDetector {
 
     /** Max output long edge of the cropped receipt image. */
     public static final int OUTPUT_MAX_EDGE = 2048;
 
-    /** Analysis image long edge. Small = fast. */
-    private static final int ANALYZE_EDGE = 480;
+    /** Analysis image long edge. */
+    private static final int ANALYZE_EDGE = 640;
 
     /** Detected quad must cover at least this fraction of the frame. */
-    private static final double MIN_AREA_FRACTION = 0.18;
+    private static final double MIN_AREA_FRACTION = 0.15;
 
     /** Minimum foreground/background gray separation for a usable threshold. */
     private static final int MIN_SEPARATION = 18;
+
+    /** Extra threshold offsets, as fractions of the Otsu separation. */
+    private static final double[] EXTRA_THRESHOLD_FRACS = {0.0, 0.12, 0.25};
+
+    /** Minimum average edge magnitude along the quad perimeter. */
+    private static final double MIN_EDGE_SUPPORT = 15.0;
+
+    /** Shortest quad side must be at least this fraction of the longest side. */
+    private static final double MIN_SIDE_RATIO = 0.12;
 
     private ReceiptDetector() {}
 
@@ -58,42 +74,62 @@ public final class ReceiptDetector {
 
         int[] otsu = otsu(blurred);
         if (otsu == null) return null;
-        int thr = otsu[0];
+        int baseThr = otsu[0];
+        int separation = otsu[1];
 
-        boolean[] mask = new boolean[w * h];
-        for (int i = 0; i < blurred.length; i++) mask[i] = blurred[i] >= thr;
-        mask = majority3x3(mask, w, h);
-        mask = majority3x3(mask, w, h);
+        int[] edges = sobelMag(blurred, w, h);
 
-        List<int[]> pts = new ArrayList<>();
-        for (int y = 0; y < h; y += 2) {
-            for (int x = 0; x < w; x += 2) {
-                if (mask[y * w + x]) pts.add(new int[]{x, y});
+        float[] bestCorners = null;
+        double bestScore = MIN_EDGE_SUPPORT;
+
+        for (double frac : EXTRA_THRESHOLD_FRACS) {
+            int thr = Math.min(250, baseThr + (int) Math.round(separation * frac));
+
+            boolean[] mask = new boolean[w * h];
+            for (int i = 0; i < blurred.length; i++) mask[i] = blurred[i] >= thr;
+            mask = majority3x3(mask, w, h);
+            mask = keepLargestComponent(mask, w, h);
+            if (mask == null) continue;
+
+            List<int[]> pts = new ArrayList<>();
+            for (int y = 0; y < h; y += 2) {
+                for (int x = 0; x < w; x += 2) {
+                    if (mask[y * w + x]) pts.add(new int[]{x, y});
+                }
+            }
+            if (pts.size() < 100) continue;
+
+            List<int[]> hull = convexHull(pts);
+            if (hull.size() < 3) continue;
+
+            MinRect rect = minAreaRect(hull);
+            if (rect == null) continue;
+            if (rect.area < MIN_AREA_FRACTION * (double) w * (double) h) continue;
+
+            float[] ordered = orderCorners(rect.corners);
+            if (!passesSanity(ordered)) continue;
+
+            double score = perimeterEdgeScore(ordered, edges, w, h);
+            if (score > bestScore) {
+                bestScore = score;
+                bestCorners = ordered;
             }
         }
-        if (pts.size() < 100) return null;
 
-        List<int[]> hull = convexHull(pts);
-        if (hull.size() < 3) return null;
-
-        MinRect rect = minAreaRect(hull);
-        if (rect == null) return null;
-        if (rect.area < MIN_AREA_FRACTION * (double) w * (double) h) return null;
-
-        float[] ordered = orderCorners(rect.corners);
+        if (bestCorners == null) return null;
 
         // Expand slightly (2%) around the centroid so paper edges are not clipped.
         float cx = 0, cy = 0;
-        for (int i = 0; i < 4; i++) { cx += ordered[i * 2]; cy += ordered[i * 2 + 1]; }
+        for (int i = 0; i < 4; i++) { cx += bestCorners[i * 2]; cy += bestCorners[i * 2 + 1]; }
         cx /= 4f; cy /= 4f;
         for (int i = 0; i < 4; i++) {
-            ordered[i * 2]     = cx + (ordered[i * 2]     - cx) * 1.02f;
-            ordered[i * 2 + 1] = cy + (ordered[i * 2 + 1] - cy) * 1.02f;
+            bestCorners[i * 2]     = cx + (bestCorners[i * 2]     - cx) * 1.02f;
+            bestCorners[i * 2 + 1] = cy + (bestCorners[i * 2 + 1] - cy) * 1.02f;
         }
 
         float inv = 1f / scale;
-        for (int i = 0; i < 8; i++) ordered[i] *= inv;
-        return ordered;
+        for (int i = 0; i < 8; i++) bestCorners[i] *= inv;
+        return bestCorners;
     }
 
     /**
@@ -129,6 +165,39 @@ public final class ReceiptDetector {
     private static float dist(float x1, float y1, float x2, float y2) {
         float dx = x2 - x1, dy = y2 - y1;
         return (float) Math.sqrt(dx * dx + dy * dy);
+    }
+
+    /** Reject quads with an implausibly short side or degenerate shape. */
+    private static boolean passesSanity(float[] c) {
+        float sTop = dist(c[0], c[1], c[2], c[3]);
+        float sRight = dist(c[2], c[3], c[4], c[5]);
+        float sBottom = dist(c[4], c[5], c[6], c[7]);
+        float sLeft = dist(c[6], c[7], c[0], c[1]);
+        float max = Math.max(Math.max(sTop, sRight), Math.max(sBottom, sLeft));
+        float min = Math.min(Math.min(sTop, sRight), Math.min(sBottom, sLeft));
+        return max > 0 && (min / max) >= MIN_SIDE_RATIO;
+    }
+
+    /** Average Sobel magnitude sampled along the quad perimeter (higher = real edges). */
+    private static double perimeterEdgeScore(float[] c, int[] edges, int w, int h) {
+        long sum = 0;
+        int count = 0;
+        for (int e = 0; e < 4; e++) {
+            float x1 = c[e * 2], y1 = c[e * 2 + 1];
+            float x2 = c[((e + 1) % 4) * 2], y2 = c[((e + 1) % 4) * 2 + 1];
+            float len = dist(x1, y1, x2, y2);
+            int steps = Math.max(2, (int) (len / 5f));
+            for (int s = 0; s <= steps; s++) {
+                float t = s / (float) steps;
+                int x = Math.round(x1 + (x2 - x1) * t);
+                int y = Math.round(y1 + (y2 - y1) * t);
+                if (x >= 0 && x < w && y >= 0 && y < h) {
+                    sum += edges[y * w + x];
+                    count++;
+                }
+            }
+        }
+        return count == 0 ? 0 : (double) sum / count;
     }
 
     // ---- grayscale helpers ----
@@ -199,6 +268,57 @@ public final class ReceiptDetector {
         }
         if (Math.abs(bestM2 - bestM1) < MIN_SEPARATION) return null;
         return new int[]{bestT, (int) Math.abs(bestM2 - bestM1)};
+    }
+
+    /** Sobel gradient magnitude: paper edges are strong gradients. */
+    private static int[] sobelMag(int[] g, int w, int h) {
+        int[] m = new int[w * h];
+        for (int y = 1; y < h - 1; y++) {
+            int row = y * w;
+            for (int x = 1; x < w - 1; x++) {
+                int i = row + x;
+                int gx = (g[i - w + 1] + 2 * g[i + 1] + g[i + w + 1])
+                       - (g[i - w - 1] + 2 * g[i - 1] + g[i + w - 1]);
+                int gy = (g[i + w - 1] + 2 * g[i + w] + g[i + w + 1])
+                       - (g[i - w - 1] + 2 * g[i - w] + g[i - w + 1]);
+                m[i] = Math.abs(gx) + Math.abs(gy);
+            }
+        }
+        return m;
+    }
+
+    /** Keep only the largest 4-connected bright component (drops lamps, bright objects). */
+    private static boolean[] keepLargestComponent(boolean[] mask, int w, int h) {
+        int n = w * h;
+        int[] label = new int[n];
+        int[] stack = new int[n];
+
+        int bestLabel = 0, bestSize = 0, currentLabel = 0;
+        for (int i = 0; i < n; i++) {
+            if (!mask[i] || label[i] != 0) continue;
+            currentLabel++;
+            int size = 0, top = 0;
+            stack[top++] = i;
+            label[i] = currentLabel;
+            while (top > 0) {
+                int p = stack[--top];
+                size++;
+                int x = p % w, y = p / w;
+                if (x > 0     && mask[p - 1] && label[p - 1] == 0) { label[p - 1] = currentLabel; stack[top++] = p - 1; }
+                if (x < w - 1 && mask[p + 1] && label[p + 1] == 0) { label[p + 1] = currentLabel; stack[top++] = p + 1; }
+                if (y > 0     && mask[p - w] && label[p - w] == 0) { label[p - w] = currentLabel; stack[top++] = p - w; }
+                if (y < h - 1 && mask[p + w] && label[p + w] == 0) { label[p + w] = currentLabel; stack[top++] = p + w; }
+            }
+            if (size > bestSize) {
+                bestSize = size;
+                bestLabel = currentLabel;
+            }
+        }
+        if (bestLabel == 0) return null;
+
+        boolean[] out = new boolean[n];
+        for (int i = 0; i < n; i++) out[i] = label[i] == bestLabel;
+        return out;
     }
 
     /** 3x3 majority filter: smooths speckle noise in the mask. */

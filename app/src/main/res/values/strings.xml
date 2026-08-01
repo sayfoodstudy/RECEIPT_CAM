@@ -13,17 +13,15 @@
     <string name="folder_none">선택되지 않음</string>
     <string name="btn_change">변경</string>
     <string name="saved_count">저장된 영수증: %1$d개</string>
-    <string name="version_info">버전 0.2</string>
+    <string name="version_info">버전 0.3</string>
     <string name="privacy_note">사진은 위 폴더에만 저장됩니다. 클라우드 자동 동기화 없음.</string>
 
     <!-- Edit -->
     <string name="edit_title">편집</string>
-    <string name="edit_hint_auto">자동 컷 완료 — 조정한 뒤 저장하세요</string>
+    <string name="edit_hint_auto">자동 컷 완료 — 보정한 뒤 저장하세요</string>
     <string name="edit_hint_fail">자동 컷 실패 — 수동 컷 버튼으로 직접 맞춰주세요</string>
-    <string name="edit_hint_manual">수동 컷 완료 — 조정한 뒤 저장하세요</string>
-    <string name="brightness">밝기</string>
-    <string name="contrast">대비</string>
-    <string name="sharpness">선명도</string>
+    <string name="edit_hint_manual">수동 컷 완료 — 보정한 뒤 저장하세요</string>
+    <string name="adjust_label">선명 보정</string>
     <string name="btn_retake">재촬영</string>
     <string name="btn_manual_crop">수동 컷</string>
     <string name="btn_save">저장</string>

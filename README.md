@@ -7,14 +7,14 @@ OCR(글자 인식)은 하지 않으며, 사진은 폰 안의 지정 폴더에만
 - compileSdk 35 / minSdk 26 / targetSdk 35
 - 빌드: GitHub Actions (PC에 Android Studio 설치 불필요)
 
-## 앱 사용 흐름 (v0.2, 삼성 카메라 스타일)
+## 앱 사용 흐름 (v0.3, 삼성 카메라 스타일)
 
 1. 앱을 켜면 바로 **촬영 화면** (좌하단: 마지막 사진 원형 썸네일 → 갤러리, 좌상단: 설정 톱니바퀴, 우상단: 플래시)
 2. 처음 사용 시: 설정(톱니바퀴) → **저장 폴더 변경**에서 폴더 선택 (한 번만)
 3. 영수증 촬영 → 자동으로 모서리를 감지해 컷 + 원근 보정 후 편집 화면 표시
    - **수동 컷** 버튼: 4개 모서리 원을 드래그해 영수증 가장자리에 직접 맞춘 뒤 ✓ 완료
    - 감지 실패 시 전체 사진으로 진행, `원본 보기`로 원본/컷 전환 가능
-4. 화면 아래 **밝기 / 대비 / 선명도** 슬라이더로 글자가 선명하게 보이도록 조정
+4. 화면 아래 **선명 보정** 슬라이더 1개로 글자가 선명하게 보이도록 조정 (밝기+대비+선명도 통합)
 5. **저장** → `ReceiptCam_yyyyMMdd_HHmmss.jpg` 형식으로 선택한 폴더에 저장
 
 ## GitHub 업로드 → Actions 빌드 → 폰 설치 (PC에서)
@@ -26,8 +26,8 @@ OCR(글자 인식)은 하지 않으며, 사진은 폰 안의 지정 폴더에만
    - ⚠️ `.github` 폴더와 `.gitignore` 파일이 꼭 포함되어야 합니다
    - 점(.)으로 시작하는 파일/폴더는 웹 업로드에서 누락될 수 있습니다 → 누락 시 **Add file → Create new file**로 직접 생성
 4. **Commit changes** 클릭 → Actions 탭에서 자동으로 빌드 시작 (약 3~5분)
-5. 빌드 완료(녹색 체크) 후 해당 실행(run)을 클릭 → 하단 **Artifacts → ReceiptCam-v0.2-apk** 다운로드
-   - 다운로드 파일은 zip이며 안에 `ReceiptCam-v0.2.apk`가 들어 있습니다
+5. 빌드 완료(녹색 체크) 후 해당 실행(run)을 클릭 → 하단 **Artifacts → ReceiptCam-v0.3-apk** 다운로드
+   - 다운로드 파일은 zip이며 안에 `ReceiptCam-v0.3.apk`가 들어 있습니다
 
 ### 삼성 폰에 설치
 
@@ -43,7 +43,7 @@ OCR(글자 인식)은 하지 않으며, 사진은 폰 안의 지정 폴더에만
 ReceiptCam/
 ├── .github/workflows/build-apk.yml   # GitHub Actions 빌드 설정
 ├── app/
-│   ├── build.gradle                  # SDK/의존성/버전 (versionCode 2, versionName "0.2")
+│   ├── build.gradle                  # SDK/의존성/버전 (versionCode 3, versionName "0.3")
 │   └── src/main/
 │       ├── AndroidManifest.xml       # 런처 = CameraActivity
 │       ├── java/com/receiptcam/app/

@@ -3,6 +3,7 @@
     android:id="@+id/cellImage"
     android:layout_width="match_parent"
     android:layout_height="120dp"
-    android:background="#222222"
+    android:background="@drawable/bg_ios_image"
+    android:clipToOutline="true"
     android:scaleType="centerCrop"
     android:contentDescription="receipt" />

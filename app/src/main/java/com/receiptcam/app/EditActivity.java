@@ -7,20 +7,22 @@ import android.os.Bundle;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
-import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+
+import com.google.android.material.slider.Slider;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-/** 촬영 후 편집: 자동/수동 컷 + 밝기/대비/선명도 조정 + 저장. */
+/** 촬영 후 편집: 자동/수동 컷 + 통합 선명 보정 슬라이더 1개 + 저장. */
 public class EditActivity extends AppCompatActivity {
 
     private static final int DECODE_MAX_EDGE = 3000;
@@ -29,12 +31,8 @@ public class EditActivity extends AppCompatActivity {
 
     private ImageView imageView;
     private TextView noticeLabel;
-    private TextView valBrightness;
-    private TextView valContrast;
-    private TextView valSharp;
-    private SeekBar seekBrightness;
-    private SeekBar seekContrast;
-    private SeekBar seekSharp;
+    private TextView valEnhance;
+    private Slider sliderEnhance;
     private Button btnToggle;
     private Button btnSave;
 
@@ -72,12 +70,8 @@ public class EditActivity extends AppCompatActivity {
 
         imageView = findViewById(R.id.imageView);
         noticeLabel = findViewById(R.id.noticeLabel);
-        valBrightness = findViewById(R.id.valBrightness);
-        valContrast = findViewById(R.id.valContrast);
-        valSharp = findViewById(R.id.valSharp);
-        seekBrightness = findViewById(R.id.seekBrightness);
-        seekContrast = findViewById(R.id.seekContrast);
-        seekSharp = findViewById(R.id.seekSharp);
+        valEnhance = findViewById(R.id.valEnhance);
+        sliderEnhance = findViewById(R.id.sliderEnhance);
         btnToggle = findViewById(R.id.btnToggle);
         btnSave = findViewById(R.id.btnSave);
         ImageButton btnBack = findViewById(R.id.btnBack);
@@ -97,28 +91,19 @@ public class EditActivity extends AppCompatActivity {
         btnToggle.setOnClickListener(v -> toggleView());
         btnSave.setOnClickListener(v -> onSaveClicked());
 
-        SeekBar.OnSeekBarChangeListener listener = new SeekBar.OnSeekBarChangeListener() {
-            @Override public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                updateValueLabels();
-            }
-            @Override public void onStartTrackingTouch(SeekBar seekBar) { }
-            @Override public void onStopTrackingTouch(SeekBar seekBar) {
+        sliderEnhance.addOnChangeListener((slider, value, fromUser) ->
+                valEnhance.setText(String.valueOf((int) value)));
+        sliderEnhance.addOnSliderTouchListener(new Slider.OnSliderTouchListener() {
+            @Override public void onStartTrackingTouch(@NonNull Slider slider) { }
+            @Override public void onStopTrackingTouch(@NonNull Slider slider) {
                 applyAdjustments();
             }
-        };
-        seekBrightness.setOnSeekBarChangeListener(listener);
-        seekContrast.setOnSeekBarChangeListener(listener);
-        seekSharp.setOnSeekBarChangeListener(listener);
+        });
+
+        valEnhance.setText(String.valueOf((int) sliderEnhance.getValue()));
 
         btnSave.setEnabled(false);
         processPhoto();
-    }
-
-    private void updateValueLabels() {
-        int bright = seekBrightness.getProgress() - 100;
-        valBrightness.setText(bright > 0 ? "+" + bright : String.valueOf(bright));
-        valContrast.setText(seekContrast.getProgress() + "%");
-        valSharp.setText(String.valueOf(seekSharp.getProgress()));
     }
 
     /** Decode -> auto-detect -> crop (fallback: full photo) -> initial render. */
@@ -146,21 +131,29 @@ public class EditActivity extends AppCompatActivity {
             runOnUiThread(() -> {
                 noticeLabel.setText(ok ? R.string.edit_hint_auto : R.string.edit_hint_fail);
                 btnSave.setEnabled(true);
-                updateValueLabels();
                 applyAdjustments();
             });
         });
     }
 
-    /** Apply sharpness + brightness + contrast off the UI thread. */
+    // 통합 보정 매핑: 레벨 0..100 -> 선명도/대비/밝기 조합 (스캐너 앱식 문서 모드)
+    private static int levelToBrightness(int level) {
+        return level * 15 / 100;              // 0..15
+    }
+
+    private static float levelToContrast(int level) {
+        return 1f + level * 0.004f;           // 1.0..1.4
+    }
+
+    /** Apply unified enhance level (sharpness + contrast + brightness) off the UI thread. */
     private void applyAdjustments() {
         final Bitmap base = showingCropped ? croppedBase : fullBase;
         if (base == null) return;
-        final int sharp = seekSharp.getProgress();
-        final int bright = seekBrightness.getProgress() - 100;
-        final float contrast = seekContrast.getProgress() / 100f;
+        final int level = (int) sliderEnhance.getValue();
+        final int bright = levelToBrightness(level);
+        final float contrast = levelToContrast(level);
         executor.execute(() -> {
-            Bitmap result = ImageEnhancer.applyAll(base, sharp, bright, contrast);
+            Bitmap result = ImageEnhancer.applyAll(base, level, bright, contrast);
             runOnUiThread(() -> {
                 shownBitmap = result;
                 imageView.setImageBitmap(result);
