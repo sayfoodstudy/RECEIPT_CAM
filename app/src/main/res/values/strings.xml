@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ReceiptCam</string>
+
+    <!-- Main -->
+    <string name="main_subtitle">영수증 촬영 → 자동 컷 + 선명도 → 저장</string>
+    <string name="folder_not_selected">저장 폴더: 선택되지 않음</string>
+    <string name="folder_selected_prefix">저장 폴더: </string>
+    <string name="btn_pick_folder">저장 폴더 선택</string>
+    <string name="btn_capture">영수증 촬영</string>
+    <string name="saved_count">저장된 영수증: %1$d개</string>
+    <string name="privacy_note">사진은 위에서 선택한 폴더에만 저장됩니다. 클라우드 자동 동기화 없음.</string>
+
+    <!-- Camera -->
+    <string name="camera_permission_needed">촬영을 위해 카메라 권한이 필요합니다</string>
+    <string name="capture_failed">촬영 실패: </string>
+
+    <!-- Edit -->
+    <string name="crop_failed_notice">자동 컷 실패 — 전체 사진으로 진행합니다</string>
+    <string name="crop_ok_notice">영수증 영역 자동 컷 완료</string>
+    <string name="sharpness">선명도</string>
+    <string name="btn_retake">재촬영</string>
+    <string name="btn_toggle_original">원본 보기</string>
+    <string name="btn_toggle_cropped">자동컷 보기</string>
+    <string name="btn_save">저장</string>
+    <string name="saved_ok">저장 완료</string>
+    <string name="saved_fail">저장 실패</string>
+    <string name="no_folder">저장 폴더가 설정되지 않았습니다</string>
+</resources>
